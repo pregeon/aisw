@@ -1,4 +1,4 @@
-python
+
 from pathlib import Path
 
 from langchain_community.document_loaders import PyPDFLoader
@@ -13,7 +13,7 @@ from langchain_chroma import Chroma
 CURRENT_DIR = Path(__file__).resolve().parent
 
 DATA_DIR = (
-    CURRENT_DIR.parent
+    CURRENT_DIR.parent.parent.parent
     / "6w"
     / "data"
 )

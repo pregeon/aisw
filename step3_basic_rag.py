@@ -16,7 +16,7 @@ except NameError:
     CURRENT_DIR = Path.cwd()
 
 DATA_DIR = (
-    CURRENT_DIR.parent
+    CURRENT_DIR.parent.parent.parent
     / "6w"
     / "data"
 )

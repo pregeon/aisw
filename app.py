@@ -1,4 +1,3 @@
-```java
 # ==========================================================
 # app.py
 # 7주차 RAG Chatbot - Streamlit
@@ -39,23 +38,18 @@ st.title(
 def build_rag():
 
     # ------------------------------------------------------
-    # 현재 app.py 위치
-    # C:\2026-open\7w
+    # 현재 app.py 위치 (7w/src/app/)
     # ------------------------------------------------------
-
-    current_dir = (
-        Path(__file__)
-        .resolve()
-        .parent
-    )
+    try:
+        current_dir = Path(__file__).resolve().parent
+    except NameError:
+        current_dir = Path.cwd()
 
     # ------------------------------------------------------
-    # 데이터 폴더
-    # C:\2026-open\6w\data
+    # 데이터 폴더 경로 설정 (상위 프로젝트 루트/6w/data)
     # ------------------------------------------------------
-
     data_dir = (
-        current_dir.parent
+        current_dir.parent.parent.parent
         / "6w"
         / "data"
     )
@@ -65,16 +59,12 @@ def build_rag():
     # ------------------------------------------------------
 
     pdf_files = sorted(
-        data_dir.glob(
-            "공지*.pdf"
-        )
+        data_dir.glob("공지*.pdf")
     )
 
     if not pdf_files:
-
         raise FileNotFoundError(
-            "6w/data 폴더에서 "
-            "공지 PDF를 찾을 수 없습니다."
+            f"경로({data_dir})에서 공지 PDF를 찾을 수 없습니다."
         )
 
     # ------------------------------------------------------
@@ -85,13 +75,12 @@ def build_rag():
 
     for pdf_file in pdf_files:
 
-        loader = PyPDFLoader( str(pdf_file) )
+        loader = PyPDFLoader(str(pdf_file))
 
         pages = loader.load()
 
         # 파일명 Metadata 추가
         for page in pages:
-
             page.metadata["file_name"] = pdf_file.name
 
         documents.extend(pages)
@@ -100,28 +89,21 @@ def build_rag():
     # Chunk 생성
     # ------------------------------------------------------
 
-    splitter = (
-        RecursiveCharacterTextSplitter(
-            chunk_size=700,
-            chunk_overlap=100
-        )
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=700,
+        chunk_overlap=100
     )
 
-    chunks = (
-        splitter
-        .split_documents(documents)
-    )
+    chunks = splitter.split_documents(documents)
 
     # ------------------------------------------------------
     # Embedding 모델
     # ------------------------------------------------------
 
-    embedding_model = (
-        HuggingFaceEmbeddings(
-            model_name=(
-                "sentence-transformers/"
-                "paraphrase-multilingual-MiniLM-L12-v2"
-            )
+    embedding_model = HuggingFaceEmbeddings(
+        model_name=(
+            "sentence-transformers/"
+            "paraphrase-multilingual-MiniLM-L12-v2"
         )
     )
 
@@ -129,14 +111,10 @@ def build_rag():
     # Chroma Vector DB
     # ------------------------------------------------------
 
-    vectorstore = (
-        Chroma.from_documents(
-            documents=chunks,
-            embedding=embedding_model,
-            collection_name=(
-                "week7_streamlit"
-            )
-        )
+    vectorstore = Chroma.from_documents(
+        documents=chunks,
+        embedding=embedding_model,
+        collection_name="week7_streamlit"
     )
 
     # ------------------------------------------------------
@@ -144,12 +122,10 @@ def build_rag():
     # 관련 Chunk 3개 검색
     # ------------------------------------------------------
 
-    retriever = (
-        vectorstore.as_retriever(
-            search_kwargs={
-                "k": 3
-            }
-        )
+    retriever = vectorstore.as_retriever(
+        search_kwargs={
+            "k": 3
+        }
     )
 
     # ------------------------------------------------------
@@ -165,10 +141,10 @@ def build_rag():
     return retriever, llm
 
 # ==========================================================
-# 4. RAG 생성
+# 4. RAG 생성 (수정 완료)
 # ==========================================================
 
-retriever, llm = ????????????????
+retriever, llm = build_rag()
 
 # ==========================================================
 # 5. 대화형 RAG 함수
@@ -187,9 +163,9 @@ def ask_chat_rag(
 
     for message in reversed(chat_history):
 
-        if (message["role"] == "user"):
+        if message["role"] == "user":
 
-            previous_question = (message["content"])
+            previous_question = message["content"]
 
             break
 
@@ -212,13 +188,13 @@ def ask_chat_rag(
         search_query = question
 
     # ------------------------------------------------------
-    # 관련 문서 검색
+    # 관련 문서 검색 (수정 완료)
     # ------------------------------------------------------
 
-    docs = retriever.invoke(??????????????????? )
+    docs = retriever.invoke(search_query)
 
     # ------------------------------------------------------
-    # 검색된 문서 하나의 문자열로 결합
+    # 검색된 문서 하나의 문자열로 결합 (수정 완료)
     # ------------------------------------------------------
 
     context_parts = []
@@ -228,11 +204,9 @@ def ask_chat_rag(
         start=1
     ):
 
-        file_name = (
-            doc.metadata.get(
-                "file_name",
-                "확인 불가"
-            )
+        file_name = doc.metadata.get(
+            "file_name",
+            "확인 불가"
         )
 
         context_parts.append(
@@ -243,14 +217,14 @@ def ask_chat_rag(
 {file_name}
 
 내용:
-{????????????????????????}
+{doc.page_content[:800]}
 """
         )
 
-    context = "\n\n".join( context_parts  )
+    context = "\n\n".join(context_parts)
 
     # ------------------------------------------------------
-    # 이전 대화 내용 생성
+    # 이전 대화 내용 생성 (수정 완료)
     # ------------------------------------------------------
 
     history_parts = []
@@ -264,11 +238,11 @@ def ask_chat_rag(
         )
 
         history_parts.append(
-            f"{??????????????}: "
-            f"{???????????????????????}"
+            f"{role}: "
+            f"{message['content']}"
         )
 
-    history_text = "\n".join(history_parts  )
+    history_text = "\n".join(history_parts)
 
     # ------------------------------------------------------
     # Prompt 생성
@@ -314,61 +288,61 @@ def ask_chat_rag(
 """
 
     # ------------------------------------------------------
-    # Ollama 답변 생성
+    # Ollama 답변 생성 (수정 완료)
     # ------------------------------------------------------
 
-    response = llm.invoke(prompt  )
+    response = llm.invoke(prompt)
 
-    return (??????????????????,  docs,  search_query  )
+    return (response.content, docs, search_query)
 
 # ==========================================================
 # 6. Session State 초기화
 # ==========================================================
 
-if ( "messages"  not in st.session_state ):
+if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if ( "pending_question" not in st.session_state ):
+if "pending_question" not in st.session_state:
     st.session_state.pending_question = None
 
 # ==========================================================
 # 7. 대화 초기화
 # ==========================================================
 
-if st.button( "대화 초기화"):
+if st.button("대화 초기화"):
     st.session_state.messages = []
     st.session_state.pending_question = None
     st.rerun()
 
 # ==========================================================
-# 8. 기존 대화 출력
+# 8. 기존 대화 출력 (수정 완료)
 # ==========================================================
 
-for message in (st.session_state.messages ):
+for message in st.session_state.messages:
 
-    with st.chat_message( message["role"] ):
+    with st.chat_message(message["role"]):
 
-        st.write(????????  )
+        st.write(message["content"])
 
         # --------------------------------------------------
         # AI 답변에 검색 정보가 저장되어 있으면 표시
         # --------------------------------------------------
 
-        if ( message["role"] == "assistant" and "sources" in message ):
+        if message["role"] == "assistant" and "sources" in message:
 
-            with st.expander( "검색된 문서 확인" ):
+            with st.expander("검색된 문서 확인"):
 
-                st.write( "검색 Query")
+                st.write("검색 Query")
 
-                st.code( message[ "search_query" ] )
+                st.code(message["search_query"])
 
-                for i, source in enumerate(message["sources"],  start=1 ):
+                for i, source in enumerate(message["sources"], start=1):
 
-                    st.write( f"검색 결과 {i}" )
+                    st.write(f"검색 결과 {i}")
 
-                    st.write( "파일:", source[ "file_name" ]  )
+                    st.write("파일:", source["file_name"])
 
-                    st.write(source["content" ] )
+                    st.write(source["content"])
 
                     st.divider()
 
@@ -376,27 +350,26 @@ for message in (st.session_state.messages ):
 # 9. RAG 실행
 # ==========================================================
 
-if ( st.session_state.pending_question is not None):
+if st.session_state.pending_question is not None:
 
-    question = (st.session_state.pending_question)
+    question = st.session_state.pending_question
 
     # ------------------------------------------------------
     # 현재 질문을 제외한 이전 대화
     # ------------------------------------------------------
 
-    previous_history = ( st.session_state.messages[:-1] )
+    previous_history = st.session_state.messages[:-1]
 
     # ------------------------------------------------------
     # 답변 생성 중 표시
-    # 이 상태에서는 chat_input이 생성되지 않음
     # ------------------------------------------------------
 
-    with st.chat_message("assistant" ):
+    with st.chat_message("assistant"):
 
-        with st.spinner( "답변을 생성하고 있습니다..." ):
+        with st.spinner("답변을 생성하고 있습니다..."):
 
-            answer, docs, search_query = (
-                ask_chat_rag(  question, previous_history)
+            answer, docs, search_query = ask_chat_rag(
+                question, previous_history
             )
 
     # ------------------------------------------------------
@@ -408,8 +381,8 @@ if ( st.session_state.pending_question is not None):
     for doc in docs:
 
         sources.append({
-            "file_name": doc.metadata.get( "file_name", "확인 불가"),
-            "content":  doc.page_content[:800]
+            "file_name": doc.metadata.get("file_name", "확인 불가"),
+            "content": doc.page_content[:800]
         })
 
     # ------------------------------------------------------
@@ -427,7 +400,7 @@ if ( st.session_state.pending_question is not None):
     # 처리 완료
     # ------------------------------------------------------
 
-    st.session_state.pending_question = ( None)
+    st.session_state.pending_question = None
 
     # ------------------------------------------------------
     # 화면 갱신
@@ -440,7 +413,7 @@ if ( st.session_state.pending_question is not None):
 # ==========================================================
 
 else:
-    question = st.chat_input( "질문을 입력하세요." )
+    question = st.chat_input("질문을 입력하세요.")
 
     if question:
 
@@ -456,18 +429,10 @@ else:
         # 처리할 질문 저장
         # --------------------------------------------------
 
-        st.session_state.pending_question = (
-            question
-        )
+        st.session_state.pending_question = question
 
         # --------------------------------------------------
         # 다시 실행
-        #
-        # 다음 실행에서는
-        # pending_question이 존재하기 때문에
-        # 질문 입력창이 표시되지 않고
-        # RAG 답변 생성으로 이동
         # --------------------------------------------------
 
         st.rerun()
-```
